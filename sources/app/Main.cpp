@@ -27,7 +27,7 @@
 using namespace Decent;
 using namespace Decent::Tools;
 
-static sgx_spid_t g_sgxSPID = { {
+static const sgx_spid_t gsk_sgxSPID = { {
 		0xDD,
 		0x16,
 		0x40,
@@ -82,11 +82,6 @@ int main(int argc, char ** argv)
 
 	uint32_t serverIp = boost::asio::ip::address_v4::from_string(serverAddr).to_uint();
 
-
-	sgx_device_status_t deviceStatusRes;
-	sgx_status_t deviceStatusResErr = Sgx::GetDeviceStatus(deviceStatusRes);
-	//ASSERT(deviceStatusResErr == SGX_SUCCESS, "%s\n", Sgx::GetErrorMessage(deviceStatusResErr).c_str());
-
 	std::shared_ptr<Ias::Connector> iasConnector = std::make_shared<Ias::Connector>();
 	Net::SmartServer smartServer;
 
@@ -94,16 +89,7 @@ int main(int argc, char ** argv)
 
 	std::shared_ptr<RaSgx::DecentServer> enclave(
 		std::make_shared<RaSgx::DecentServer>(
-			g_sgxSPID, iasConnector, ENCLAVE_FILENAME, KnownFolderType::LocalAppDataEnclave, TOKEN_FILENAME));
-
-	//if (!isRootServer)
-	//{
-	//	std::unique_ptr<Connection> connection = std::make_unique<TCPConnection>(rootServerIp, rootServerPort);
-	//	DecentRASession::SendHandshakeMessage(*connection, *enclave);
-	//	Json::Value jsonRoot;
-	//	connection->ReceivePack(jsonRoot);
-	//	enclave->ProcessSmartMessage(Messages::ParseCat(jsonRoot), jsonRoot, *connection);
-	//}
+			gsk_sgxSPID, iasConnector, ENCLAVE_FILENAME, KnownFolderType::LocalAppDataEnclave, TOKEN_FILENAME));
 
 	std::unique_ptr<Net::Server> server(std::make_unique<Net::TCPServer>(serverIp, serverPort));
 	std::unique_ptr<Net::Server> localServer(std::make_unique<Net::LocalServer>(localAddr + std::to_string(serverPort)));
