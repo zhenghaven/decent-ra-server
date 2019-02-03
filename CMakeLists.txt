@@ -175,46 +175,12 @@ message(STATUS "")
 #   Add submodules
 #==========================================================
 
-#MbedTLS
-# set(ENABLE_TESTING OFF CACHE BOOL "Build mbed TLS tests." FORCE)
-# set(ENABLE_PROGRAMS OFF CACHE BOOL "Build mbed TLS programs." FORCE)
-# add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libs/mbedtls)
-# set(MBEDTLS_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/libs/mbedtls/include)
-# set(MBEDTLS_INCLUDE_DIRS ${MBEDTLS_INCLUDE_DIR})
-# set(MBEDCRYPTO_LIBRARY mbedcrypto)
-# set(MBEDX509_LIBRARY mbedx509)
-# set(MBEDTLS_LIBRARY mbedtls)
-# set(MBEDCRYPTO_ENCLAVE_LIBRARY mbedcrypto_enclave)
-# set(MBEDX509_ENCLAVE_LIBRARY mbedx509_enclave)
-# set(MBEDTLS_ENCLAVE_LIBRARY mbedtls_enclave)
-
-#JsonCPP
-# set(JSONCPP_WITH_TESTS OFF CACHE BOOL "Set to ON to build JsonCpp with tests." FORCE)
-# set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE BOOL "Set to ON to build JsonCpp with unit tests." FORCE)
-# add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libs/jsoncpp)
-
 #Intel SGX SDK
-# include(${CMAKE_CURRENT_LIST_DIR}/cmake/DownloadSgxSdk.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/libs/decent-ra-api/cmake/FindSgxSdk.cmake)
 
 ##Header only libraries
-# set(CPPCODEC_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/libs/cppcodec)
-# set(RAPIDJSON_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/libs/rapidjson/include)
 set(TCLAP_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/libs/tclap/include)
 
-
-set(COMMON_APP_INCLUDE_DIRS ${TCLAP_INCLUDE_DIR} 
-							 # ${CURL_INCLUDE_DIR} 
-							 # ${CPPCODEC_INCLUDE_DIR} 
-							 # ${MBEDTLS_INCLUDE_DIR} 
-							 # ${RAPIDJSON_INCLUDE_DIR} 
-							 # ${Boost_INCLUDE_DIRS} 
-							 )
-
-# set(COMMON_ENCLAVE_INCLUDE_DIRS ${CPPCODEC_INCLUDE_DIR}
-							 # ${RAPIDJSON_INCLUDE_DIR}
-							 # ${MBEDTLS_INCLUDE_DIR}
-							 # )
 
 set(DECENT_API_DECENT_SERVER ON CACHE BOOL "Add decent server module." FORCE)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libs/decent-ra-api)
@@ -310,8 +276,6 @@ set(${Proj_Name}_Enclave_File "${Enclave_Prog_Prefix}${Proj_Name}_Enclave.signed
 set(${Proj_Name}_Enclave_Lib "${Enclave_Prog_Prefix}${Proj_Name}_Enclave$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>.${Enclave_Prog_Postfix}")
 
 add_library(${Proj_Name}_Enclave SHARED ${SOURCES_COMMON} ${SOURCES_COMMON_EDL} ${SOURCES_COMMON_ENCLAVE} ${SOURCES_Enclave} ${SOURCES_EDL})
-#includes:
-target_include_directories(${Proj_Name}_Enclave BEFORE PRIVATE ${COMMON_ENCLAVE_INCLUDE_DIRS})
 #defines:
 target_compile_definitions(${Proj_Name}_Enclave PRIVATE ${COMMON_ENCLAVE_DEFINES})
 #compiler flags:
@@ -329,21 +293,21 @@ add_custom_command(TARGET ${Proj_Name}_Enclave
 )
 
 target_link_libraries(${Proj_Name}_Enclave 
-					DecentRa_Server_Enclave 
-					${WHOLE_ARCHIVE_FLAG_BEGIN} 
-					IntelSGX::SDK_Trusted_Whole_lib 
-					${WHOLE_ARCHIVE_FLAG_END}
-					${GROUP_FLAG_BEGIN}
-					IntelSGX::SDK_Trusted_service 
-					IntelSGX::SDK_Trusted_stdc 
-					IntelSGX::SDK_Trusted_cxx 
-					IntelSGX::SDK_Trusted_key_exchange 
-					IntelSGX::SDK_Trusted_crypto 
-					${MBEDCRYPTO_ENCLAVE_LIBRARY} 
-					${MBEDX509_ENCLAVE_LIBRARY} 
-					${MBEDTLS_ENCLAVE_LIBRARY} 
-					${GROUP_FLAG_END}
-					)
+	${WHOLE_ARCHIVE_FLAG_BEGIN} 
+	IntelSGX::SDK_Trusted_Whole_lib 
+	${WHOLE_ARCHIVE_FLAG_END}
+	${GROUP_FLAG_BEGIN}
+	IntelSGX::SDK_Trusted_service 
+	IntelSGX::SDK_Trusted_stdc 
+	IntelSGX::SDK_Trusted_cxx 
+	IntelSGX::SDK_Trusted_key_exchange 
+	IntelSGX::SDK_Trusted_crypto 
+	DecentRa_Server_Enclave 
+	mbedcrypto_enclave 
+	mbedx509_enclave 
+	mbedtls_enclave 
+	${GROUP_FLAG_END}
+)
 
 add_dependencies(${Proj_Name}_Enclave ${Proj_Name}_EDL)
 
@@ -353,7 +317,7 @@ add_dependencies(${Proj_Name}_Enclave ${Proj_Name}_EDL)
 
 add_executable(${Proj_Name}_App ${SOURCES_COMMON} ${SOURCES_COMMON_EDL} ${SOURCES_COMMON_APP} ${SOURCES_App} ${SOURCES_EDL})
 #includes:
-target_include_directories(${Proj_Name}_App PRIVATE ${COMMON_APP_INCLUDE_DIRS})
+target_include_directories(${Proj_Name}_App PRIVATE ${TCLAP_INCLUDE_DIR})
 #defines:
 target_compile_definitions(${Proj_Name}_App PRIVATE ${COMMON_APP_DEFINES} ENCLAVE_FILENAME="${${Proj_Name}_Enclave_File}" TOKEN_FILENAME="${Proj_Name}_Enclave.token")
 #linker flags:
@@ -362,16 +326,16 @@ set_target_properties(${Proj_Name}_App PROPERTIES LINK_FLAGS_DEBUGSIMULATION "${
 set_target_properties(${Proj_Name}_App PROPERTIES LINK_FLAGS_RELEASE "${APP_RELEASE_LINKER_OPTIONS}")
 
 target_link_libraries(${Proj_Name}_App 
-					DecentRa_Server_App 
-					${COMMON_STANDARD_LIBRARIES} 
-					IntelSGX::SDK_Untrusted
-					jsoncpp_lib_static 
-					libcurl 
-					${MBEDTLS_LIBRARY} 
-					Boost::filesystem
-					Boost::system
-					${Additional_Sys_Lib}
-				)
+	${COMMON_STANDARD_LIBRARIES} 
+	IntelSGX::SDK_Untrusted
+	DecentRa_Server_App 
+	jsoncpp_lib_static 
+	libcurl 
+	mbedtls 
+	Boost::filesystem
+	Boost::system
+	${Additional_Sys_Lib}
+)
 
 add_dependencies(${Proj_Name}_App ${Proj_Name}_Enclave)
 
