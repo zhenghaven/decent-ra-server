@@ -34,6 +34,10 @@
 # Build Directory
 build/
 
+# CLion Build Directories
+.idea/
+cmake-build-*/
+
 #Enclave EDL generated files
 *_t.h
 *_t.c
