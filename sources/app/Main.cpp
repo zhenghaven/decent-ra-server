@@ -1,13 +1,9 @@
-#include <cstdio>
-#include <cstring>
-
 #include <string>
 #include <memory>
 #include <iostream>
 
 #include <tclap/CmdLine.h>
 #include <boost/asio/ip/address_v4.hpp>
-#include <json/json.h>
 #include <sgx_quote.h>
 
 #include <DecentApi/CommonApp/Common.h>
@@ -56,7 +52,9 @@ static const sgx_spid_t gsk_sgxSPID = { {
  */
 int main(int argc, char ** argv)
 {
-	TCLAP::CmdLine cmd("Decent Remote Attestation", ' ', "ver", true);
+	std::cout << "================ Decent Server ================" << std::endl;
+
+	TCLAP::CmdLine cmd("Decent Server", ' ', "ver", true);
 
 #ifndef DEBUG
 	TCLAP::ValueArg<uint16_t>  argServerPort("p", "port", "Port number for on-coming local connection.", true, 0, "[0-65535]");
@@ -68,24 +66,20 @@ int main(int argc, char ** argv)
 
 	cmd.parse(argc, argv);
 
-#ifndef DEBUG
 	std::string serverAddr = "127.0.0.1";
-	uint16_t serverPort = argServerPort.getValue();
 	std::string localAddr = "DecentServerLocal";
+#ifndef DEBUG
+	uint16_t serverPort = argServerPort.getValue();
 #else
 	uint16_t rootServerPort = 57755U;
-
-	std::string serverAddr = "127.0.0.1";
 	uint16_t serverPort = rootServerPort + testOpt.getValue();
-	std::string localAddr = "DecentServerLocal";
 #endif
-
+	/*TODO: Add SGX capability test.*/
+	/*TODO: Move SPID, certificate path, key path to configuration file.*/
 	uint32_t serverIp = boost::asio::ip::address_v4::from_string(serverAddr).to_uint();
 
 	std::shared_ptr<Ias::Connector> iasConnector = std::make_shared<Ias::Connector>();
 	Net::SmartServer smartServer;
-
-	std::cout << "================ Decent Server ================" << std::endl;
 
 	std::shared_ptr<RaSgx::DecentServer> enclave(
 		std::make_shared<RaSgx::DecentServer>(
