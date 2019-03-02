@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.11)
 
 #==========================================================
-#   Options for Decent Project
+#   Options for Decent Server Project
 #==========================================================
 set(HUNTER_BOOST_RUNTIME_STATIC ON CACHE BOOL "Switch for using boost runtime static linking." FORCE)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if(APPLE)
 	message(FATAL_ERROR "Mac OS is not supported for now.")
@@ -29,7 +30,7 @@ get_filename_component(HUNTER_ROOT "${CMAKE_CURRENT_LIST_DIR}/hunter" ABSOLUTE)
 HunterGate(URL "x" SHA1 "xxxxxxxx" FILEPATH ${CMAKE_CURRENT_LIST_DIR}/HunterConfig.cmake)
 
 #==========================================================
-#   Start Decent Project
+#   Start Decent Server Project
 #==========================================================
 project(DecentServer)
 

@@ -5,7 +5,6 @@
 #include <tclap/CmdLine.h>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/filesystem/path.hpp>
-#include <sgx_quote.h>
 
 #include <DecentApi/CommonApp/Common.h>
 
@@ -20,34 +19,15 @@
 #include <DecentApi/CommonApp/SGX/IasConnector.h>
 
 #include <DecentApi/CommonApp/Tools/DiskFile.h>
-#include <DecentApi/CommonApp/Tools/ConfigManager.h>
 
 #include <DecentApi/Common/Common.h>
 #include <DecentApi/Common/Ra/WhiteList/HardCoded.h>
 
+#include <DecentApi/DecentServerApp/ServerConfigManager.h>
 #include <DecentApi/DecentServerApp/DecentServer.h>
 
 using namespace Decent;
 using namespace Decent::Tools;
-
-static const sgx_spid_t gsk_sgxSPID = { {
-		0xDD,
-		0x16,
-		0x40,
-		0xFE,
-		0x0D,
-		0x28,
-		0xC9,
-		0xA8,
-		0xB3,
-		0x05,
-		0xAF,
-		0x4D,
-		0x4E,
-		0x76,
-		0x58,
-		0xBE,
-	} };
 
 static bool GetConfigurationJsonString(const std::string & filePath, std::string & outJsonStr)
 {
@@ -90,7 +70,7 @@ int main(int argc, char ** argv)
 		return -1;
 	}
 
-	ConfigManager configManager(configJsonStr);
+	ServerConfigManager configManager(configJsonStr);
 
 	const ConfigItem& decentServerConfig = configManager.GetItem(Ra::WhiteList::sk_nameDecentServer);
 
@@ -99,14 +79,25 @@ int main(int argc, char ** argv)
 	uint32_t serverIp = boost::asio::ip::address_v4::from_string(decentServerConfig.GetAddr()).to_uint();
 	const std::string localServerName = "Local_" + decentServerConfig.GetAddr() + "_" + std::to_string(decentServerConfig.GetPort());
 
-	std::shared_ptr<Ias::Connector> iasConnector = std::make_shared<Ias::Connector>();
+	std::shared_ptr<Ias::Connector> iasConnector;
+	try 
+	{
+		iasConnector = std::make_shared<Ias::Connector>(configManager.GetServiceProviderCertPath(), 
+			configManager.GetServiceProviderPrvKeyPath());
+	}
+	catch (const std::exception& e)
+	{
+		PRINT_W("Failed to open Service Provider certificate or key file! Error Msg:\n%s", e.what());
+		return -1;
+	}
+	
 	Net::SmartServer smartServer;
 
 	std::shared_ptr<RaSgx::DecentServer> enclave;
 	try 
 	{
 		enclave = std::make_shared<RaSgx::DecentServer>(
-			gsk_sgxSPID, iasConnector, ENCLAVE_FILENAME, KnownFolderType::LocalAppDataEnclave, TOKEN_FILENAME);
+			configManager.GetSpid(), iasConnector, ENCLAVE_FILENAME, KnownFolderType::LocalAppDataEnclave, TOKEN_FILENAME);
 	}
 	catch (const std::exception& e)
 	{
