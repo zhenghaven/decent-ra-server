@@ -32,14 +32,14 @@
 *.app
 
 # Build Directory
-build/
-
-# CLion Build Directories
+*build*/
 .idea/
-cmake-build-*/
 
 #Enclave EDL generated files
 *_t.h
 *_t.c
 *_u.h
 *_u.c
+
+#Mac OS
+*.DS_Store
