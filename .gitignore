@@ -33,6 +33,8 @@
 
 # Build Directory
 *build*/
+
+# CLion Build Directories
 .idea/
 
 #Enclave EDL generated files
