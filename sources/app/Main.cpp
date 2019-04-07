@@ -21,9 +21,9 @@
 #include <DecentApi/CommonApp/Tools/DiskFile.h>
 
 #include <DecentApi/Common/Common.h>
-#include <DecentApi/Common/Ra/WhiteList/HardCoded.h>
+#include <DecentApi/Common/Ra/WhiteList/WhiteList.h>
 
-#include <DecentApi/DecentServerApp/ServerConfigManager.h>
+#include <DecentApi/DecentServerApp/Sgx/ServerConfigManager.h>
 #include <DecentApi/DecentServerApp/DecentServer.h>
 
 using namespace Decent;
@@ -70,7 +70,7 @@ int main(int argc, char ** argv)
 		return -1;
 	}
 
-	ServerConfigManager configManager(configJsonStr);
+	Sgx::ServerConfigManager configManager(configJsonStr);
 
 	const ConfigItem& decentServerConfig = configManager.GetItem(Ra::WhiteList::sk_nameDecentServer);
 

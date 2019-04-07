@@ -1,12 +1,20 @@
 {
-	"DecentServer" : 
+	"_comment_01" : "A configuration file for Decent Server", 
+	
+	"Enclaves" : 
 	{
-		"Address" : "127.0.0.1", 
-		"Port" : 57755, 
-		"LoadedWhiteList" : false,
-		"IasSpid" : "DD1640FE0D28C9A8B305AF4D4E7658BE",
-		"SpCertPath" : null,
-		"SpPrvKeyPath" : null,
-		"_comment" : "IAS SPID field (i.e. IasSpid) is ignored in simulation mode. Path to Service Provider certificate (i.e. SpCertPath) are optional, and default path will be used when not specified; Same for path to Service Provider's private key (i.e. SpPrvKeyPath)."
-	}
+		"DecentServer" : 
+		{
+			"Address" : "127.0.0.1", 
+			"Port" : 57755, 
+			"LoadedWhiteList" : false
+		}
+	}, 
+	
+	"IasSpid" : null, 
+	"_comment_02" : "IAS SPID field (i.e. IasSpid) is ignored in simulation mode.", 
+	
+	"_comment_03" : "Path to Service Provider certificate (i.e. SpCertPath) are optional, and default path will be used when not specified; Same for path to Service Provider's private key (i.e. SpPrvKeyPath).", 
+	"SpCertPath" : null, 
+	"SpPrvKeyPath" : null
 }
