@@ -23,7 +23,7 @@
 #include <DecentApi/Common/Common.h>
 #include <DecentApi/Common/Ra/WhiteList/WhiteList.h>
 
-#include <DecentApi/DecentServerApp/Sgx/ServerConfigManager.h>
+#include <DecentApi/DecentServerApp/SGX/ServerConfigManager.h>
 #include <DecentApi/DecentServerApp/DecentServer.h>
 
 using namespace Decent;
