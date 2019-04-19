@@ -295,14 +295,16 @@ add_custom_command(TARGET ${Proj_Name}_Enclave
 
 target_link_libraries(${Proj_Name}_Enclave 
 	${WHOLE_ARCHIVE_FLAG_BEGIN} 
-	IntelSGX::SDK_Trusted_Whole_lib 
+	IntelSGX::Trusted::switchless 
+	IntelSGX::Trusted::rts 
 	${WHOLE_ARCHIVE_FLAG_END}
 	${GROUP_FLAG_BEGIN}
-	IntelSGX::SDK_Trusted_service 
-	IntelSGX::SDK_Trusted_stdc 
-	IntelSGX::SDK_Trusted_cxx 
-	IntelSGX::SDK_Trusted_key_exchange 
-	IntelSGX::SDK_Trusted_crypto 
+	IntelSGX::Trusted::stdc 
+	IntelSGX::Trusted::cxx 
+	IntelSGX::Trusted::service 
+	IntelSGX::Trusted::key_exchange 
+	IntelSGX::Trusted::crypto 
+	IntelSGX::Trusted::file_system 
 	DecentRa_Server_Enclave 
 	mbedcrypto_enclave 
 	mbedx509_enclave 
@@ -328,7 +330,7 @@ set_target_properties(${Proj_Name}_App PROPERTIES LINK_FLAGS_RELEASE "${APP_RELE
 
 target_link_libraries(${Proj_Name}_App 
 	${COMMON_STANDARD_LIBRARIES} 
-	IntelSGX::SDK_Untrusted
+	IntelSGX::Untrusted::Libs
 	DecentRa_Server_App 
 	jsoncpp_lib_static 
 	libcurl 
