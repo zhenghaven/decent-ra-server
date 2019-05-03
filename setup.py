@@ -1,6 +1,7 @@
 import os
 import platform
 import sys
+import ctypes
 import shutil
 
 gs_enableHunter = True
@@ -19,6 +20,12 @@ gs_absHunterBaseProjPath = os.path.abspath(gs_defaultHunterProjPath + "/" + gs_h
 gs_absHunterBaseSharedPath = os.path.abspath(gs_defaultHunterSharedPath + "/" + gs_hunterBaseName)
 
 gs_absOriWorkDir = os.path.abspath("./")
+
+def is_admin():
+	try:
+		return ctypes.windll.shell32.IsUserAnAdmin()
+	except:
+		return False
 
 def ExitProcess(errorCode = 0):
 	sys.stdout.write("Finished. Press enter to exit...")
@@ -55,6 +62,10 @@ def SetupHunterDir():
 	
 	if os.path.isdir(gs_absHunterBaseSharedPath) and not(os.path.isdir(gs_absHunterBaseProjPath)):
 		#create sym link.
+		if os.name == 'nt':
+			if not is_admin():
+				ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
+				quit()
 		os.symlink(gs_absHunterBaseSharedPath, gs_absHunterBaseProjPath, True)
 	
 	sys.stdout.write("-- Hunter directory is ready.\n")
