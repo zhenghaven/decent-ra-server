@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include <tclap/CmdLine.h>
-#include <boost/asio/ip/address_v4.hpp>
 #include <boost/filesystem/path.hpp>
 
 #include <DecentApi/CommonApp/Common.h>
@@ -19,6 +18,9 @@
 #include <DecentApi/CommonApp/SGX/IasConnector.h>
 
 #include <DecentApi/CommonApp/Tools/DiskFile.h>
+#include <DecentApi/CommonApp/Tools/FileSystemUtil.h>
+
+#include <DecentApi/CommonApp/Threading/MainThreadAsynWorker.h>
 
 #include <DecentApi/Common/Common.h>
 #include <DecentApi/Common/Ra/WhiteList/WhiteList.h>
@@ -28,21 +30,7 @@
 
 using namespace Decent;
 using namespace Decent::Tools;
-
-static bool GetConfigurationJsonString(const std::string & filePath, std::string & outJsonStr)
-{
-	try
-	{
-		DiskFile file(filePath, FileBase::Mode::Read);
-		outJsonStr.resize(file.GetFileSize());
-		file.ReadBlockExactSize(outJsonStr);
-		return true;
-	}
-	catch (const FileException&)
-	{
-		return false;
-	}
-}
+using namespace Decent::Threading;
 
 /**
  * \brief	Main entry-point for this application
@@ -54,7 +42,11 @@ static bool GetConfigurationJsonString(const std::string & filePath, std::string
  */
 int main(int argc, char ** argv)
 {
+	MainThreadAsynWorker mainThreadWorker;
+
 	std::cout << "================ Decent Server ================" << std::endl;
+
+	/*TODO: Add SGX capability test.*/
 
 	TCLAP::CmdLine cmd("Decent Server", ' ', "ver", true);
 
@@ -63,60 +55,52 @@ int main(int argc, char ** argv)
 
 	cmd.parse(argc, argv);
 
+	//------- Read configuration file:
 	std::string configJsonStr;
-	if (!GetConfigurationJsonString(configPathArg.getValue(), configJsonStr))
-	{
-		PRINT_W("Failed to load configuration file.");
-		return -1;
-	}
-
-	Sgx::ServerConfigManager configManager(configJsonStr);
-
-	const ConfigItem& decentServerConfig = configManager.GetItem(Ra::WhiteList::sk_nameDecentServer);
-
-	/*TODO: Add SGX capability test.*/
-	/*TODO: Move SPID, certificate path, key path to configuration file.*/
-	uint32_t serverIp = boost::asio::ip::address_v4::from_string(decentServerConfig.GetAddr()).to_uint();
-	const std::string localServerName = "Local_" + decentServerConfig.GetAddr() + "_" + std::to_string(decentServerConfig.GetPort());
-
-	std::shared_ptr<Ias::Connector> iasConnector;
-	try 
-	{
-		iasConnector = std::make_shared<Ias::Connector>(configManager.GetServiceProviderCertPath(), 
-			configManager.GetServiceProviderPrvKeyPath());
-	}
-	catch (const std::exception& e)
-	{
-		PRINT_W("Failed to open Service Provider certificate or key file! Error Msg:\n%s", e.what());
-		return -1;
-	}
-	
-	Net::SmartServer smartServer;
-
-	std::shared_ptr<RaSgx::DecentServer> enclave;
-	try 
-	{
-		enclave = std::make_shared<RaSgx::DecentServer>(
-			configManager.GetSpid(), iasConnector, ENCLAVE_FILENAME, KnownFolderType::LocalAppDataEnclave, TOKEN_FILENAME);
-	}
-	catch (const std::exception& e)
-	{
-		PRINT_W("Failed to start enclave program! Error Msg:\n%s", e.what());
-		return -1;
-	}
-	
-
-	std::unique_ptr<Net::Server> tcpServer;
-	std::unique_ptr<Net::Server> localServer;
 	try
 	{
-		tcpServer = std::make_unique<Net::TCPServer>(serverIp, decentServerConfig.GetPort());
+		DiskFile file(configPathArg.getValue(), FileBase::Mode::Read, true);
+		configJsonStr.resize(file.GetFileSize());
+		file.ReadBlockExactSize(configJsonStr);
+	}
+	catch (const std::exception& e)
+	{
+		PRINT_W("Failed to load configuration file. Error Msg: %s", e.what());
+		return -1;
+	}
+	Sgx::ServerConfigManager configManager(configJsonStr);
+
+	//------- Read Decent Server Configuration:
+	uint16_t serverPort = 0;
+	uint32_t serverIp = 0;
+	std::string localServerName;
+	try
+	{
+		const ConfigItem& decentServerConfig = configManager.GetItem(Ra::WhiteList::sk_nameDecentServer);
+
+		serverIp = Net::TCPConnection::GetIpAddressFromStr(decentServerConfig.GetAddr());
+		serverPort = decentServerConfig.GetPort();
+		localServerName = "Local_" + decentServerConfig.GetAddr() + "_" + std::to_string(decentServerConfig.GetPort());
+	}
+	catch (const std::exception& e)
+	{
+		PRINT_W("Failed to read Decent Server Configuration. Error Msg: %s", e.what());
+		return -1;
+	}
+
+	//------- Setup TCP server:
+	std::unique_ptr<Net::Server> tcpServer;
+	try
+	{
+		tcpServer = std::make_unique<Net::TCPServer>(serverIp, serverPort);
 	}
 	catch (const std::exception& e)
 	{
 		PRINT_W("Failed to start TCP server! Error Message:\n%s", e.what());
 	}
 
+	//------- Setup Local server:
+	std::unique_ptr<Net::Server> localServer;
 	try
 	{
 		localServer = std::make_unique<Net::LocalServer>(localServerName);
@@ -132,9 +116,40 @@ int main(int argc, char ** argv)
 		return -1;
 	}
 
-	smartServer.AddServer(tcpServer, enclave);
-	smartServer.AddServer(localServer, enclave);
-	smartServer.RunUtilUserTerminate();
+	//------- Setup IAS connector:
+	std::shared_ptr<Ias::Connector> iasConnector;
+	try 
+	{
+		iasConnector = std::make_shared<Ias::Connector>(configManager.GetServiceProviderCertPath(), 
+			configManager.GetServiceProviderPrvKeyPath());
+	}
+	catch (const std::exception& e)
+	{
+		PRINT_W("Failed to open Service Provider certificate or key file. Error Msg: %s", e.what());
+		return -1;
+	}
+	
+	//------- Setup enclave:
+	std::shared_ptr<RaSgx::DecentServer> enclave;
+	try 
+	{
+		boost::filesystem::path tokenPath = GetKnownFolderPath(KnownFolderType::LocalAppDataEnclave).append(TOKEN_FILENAME);
+		enclave = std::make_shared<RaSgx::DecentServer>(
+			configManager.GetSpid(), iasConnector, ENCLAVE_FILENAME, tokenPath);
+	}
+	catch (const std::exception& e)
+	{
+		PRINT_W("Failed to start enclave program. Error Msg: %s", e.what());
+		return -1;
+	}
+	
+	//------- Setup Smart Server:
+	Net::SmartServer smartServer(mainThreadWorker);
+	smartServer.AddServer(tcpServer, enclave, nullptr, 1);
+	smartServer.AddServer(localServer, enclave, nullptr, 1);
+
+	//------- keep running until an interrupt signal (Ctrl + C) is received.
+	mainThreadWorker.UpdateUntilInterrupt();
 
 	PRINT_I("Exit ...\n");
 	return 0;
