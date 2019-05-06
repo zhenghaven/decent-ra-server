@@ -7,7 +7,6 @@
 
 #include <DecentApi/CommonApp/Common.h>
 
-#include <DecentApi/CommonApp/Net/SmartMessages.h>
 #include <DecentApi/CommonApp/Net/TCPConnection.h>
 #include <DecentApi/CommonApp/Net/TCPServer.h>
 #include <DecentApi/CommonApp/Net/LocalConnection.h>
@@ -42,9 +41,13 @@ using namespace Decent::Threading;
  */
 int main(int argc, char ** argv)
 {
+	//------- Construct main thread worker at very first:
 	MainThreadAsynWorker mainThreadWorker;
 
 	std::cout << "================ Decent Server ================" << std::endl;
+
+	//------- Setup Smart Server:
+	Net::SmartServer smartServer(mainThreadWorker);
 
 	/*TODO: Add SGX capability test.*/
 
@@ -56,19 +59,21 @@ int main(int argc, char ** argv)
 	cmd.parse(argc, argv);
 
 	//------- Read configuration file:
-	std::string configJsonStr;
+	std::unique_ptr<Sgx::ServerConfigManager> configMgr;
 	try
 	{
+		std::string configJsonStr;
 		DiskFile file(configPathArg.getValue(), FileBase::Mode::Read, true);
 		configJsonStr.resize(file.GetFileSize());
 		file.ReadBlockExactSize(configJsonStr);
+
+		configMgr = std::make_unique<Sgx::ServerConfigManager>(configJsonStr);
 	}
 	catch (const std::exception& e)
 	{
 		PRINT_W("Failed to load configuration file. Error Msg: %s", e.what());
 		return -1;
 	}
-	Sgx::ServerConfigManager configManager(configJsonStr);
 
 	//------- Read Decent Server Configuration:
 	uint16_t serverPort = 0;
@@ -76,7 +81,7 @@ int main(int argc, char ** argv)
 	std::string localServerName;
 	try
 	{
-		const ConfigItem& decentServerConfig = configManager.GetItem(Ra::WhiteList::sk_nameDecentServer);
+		const ConfigItem& decentServerConfig = configMgr->GetItem(Ra::WhiteList::sk_nameDecentServer);
 
 		serverIp = Net::TCPConnection::GetIpAddressFromStr(decentServerConfig.GetAddr());
 		serverPort = decentServerConfig.GetPort();
@@ -96,7 +101,7 @@ int main(int argc, char ** argv)
 	}
 	catch (const std::exception& e)
 	{
-		PRINT_W("Failed to start TCP server! Error Message:\n%s", e.what());
+		PRINT_W("Failed to start TCP server. Error Message: %s", e.what());
 	}
 
 	//------- Setup Local server:
@@ -107,7 +112,7 @@ int main(int argc, char ** argv)
 	}
 	catch (const std::exception& e)
 	{
-		PRINT_W("Failed to start local server! Error Message:\n%s", e.what());
+		PRINT_W("Failed to start local server. Error Message: %s", e.what());
 	}
 
 	if (!tcpServer && !localServer)
@@ -120,8 +125,8 @@ int main(int argc, char ** argv)
 	std::shared_ptr<Ias::Connector> iasConnector;
 	try 
 	{
-		iasConnector = std::make_shared<Ias::Connector>(configManager.GetServiceProviderCertPath(), 
-			configManager.GetServiceProviderPrvKeyPath());
+		iasConnector = std::make_shared<Ias::Connector>(configMgr->GetServiceProviderCertPath(),
+			configMgr->GetServiceProviderPrvKeyPath());
 	}
 	catch (const std::exception& e)
 	{
@@ -135,21 +140,24 @@ int main(int argc, char ** argv)
 	{
 		boost::filesystem::path tokenPath = GetKnownFolderPath(KnownFolderType::LocalAppDataEnclave).append(TOKEN_FILENAME);
 		enclave = std::make_shared<RaSgx::DecentServer>(
-			configManager.GetSpid(), iasConnector, ENCLAVE_FILENAME, tokenPath);
+			configMgr->GetSpid(), iasConnector, ENCLAVE_FILENAME, tokenPath);
 	}
 	catch (const std::exception& e)
 	{
 		PRINT_W("Failed to start enclave program. Error Msg: %s", e.what());
 		return -1;
 	}
-	
-	//------- Setup Smart Server:
-	Net::SmartServer smartServer(mainThreadWorker);
+
+	//------- Add servers to smart server.
 	smartServer.AddServer(tcpServer, enclave, nullptr, 1);
 	smartServer.AddServer(localServer, enclave, nullptr, 1);
 
 	//------- keep running until an interrupt signal (Ctrl + C) is received.
 	mainThreadWorker.UpdateUntilInterrupt();
+
+	//------- Exit...
+	enclave.reset();
+	smartServer.Terminate();
 
 	PRINT_I("Exit ...\n");
 	return 0;
