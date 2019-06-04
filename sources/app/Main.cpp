@@ -24,7 +24,7 @@
 #include <DecentApi/Common/Common.h>
 #include <DecentApi/Common/Ra/WhiteList/WhiteList.h>
 
-#include <DecentApi/DecentServerApp/SGX/ServerConfigManager.h>
+#include <DecentApi/DecentServerApp/SGX/DecentServerConfig.h>
 #include <DecentApi/DecentServerApp/DecentServer.h>
 
 using namespace Decent;
@@ -59,7 +59,7 @@ int main(int argc, char ** argv)
 	cmd.parse(argc, argv);
 
 	//------- Read configuration file:
-	std::unique_ptr<Sgx::ServerConfigManager> configMgr;
+	std::unique_ptr<Sgx::DecentServerConfig> serverConfig;
 	try
 	{
 		std::string configJsonStr;
@@ -67,7 +67,7 @@ int main(int argc, char ** argv)
 		configJsonStr.resize(file.GetFileSize());
 		file.ReadBlockExactSize(configJsonStr);
 
-		configMgr = std::make_unique<Sgx::ServerConfigManager>(configJsonStr);
+		serverConfig = std::make_unique<Sgx::DecentServerConfig>(configJsonStr);
 	}
 	catch (const std::exception& e)
 	{
@@ -81,7 +81,7 @@ int main(int argc, char ** argv)
 	std::string localServerName;
 	try
 	{
-		const ConfigItem& decentServerConfig = configMgr->GetItem(Ra::WhiteList::sk_nameDecentServer);
+		const auto& decentServerConfig = serverConfig->GetDecentServerConfig();
 
 		serverIp = Net::TCPConnection::GetIpAddressFromStr(decentServerConfig.GetAddr());
 		serverPort = decentServerConfig.GetPort();
@@ -125,8 +125,7 @@ int main(int argc, char ** argv)
 	std::shared_ptr<Ias::Connector> iasConnector;
 	try 
 	{
-		iasConnector = std::make_shared<Ias::Connector>(configMgr->GetServiceProviderCertPath(),
-			configMgr->GetServiceProviderPrvKeyPath());
+		iasConnector = std::make_shared<Ias::Connector>(serverConfig->GetSgxServiceProviderConfig().GetSubscriptionKey());
 	}
 	catch (const std::exception& e)
 	{
@@ -140,7 +139,7 @@ int main(int argc, char ** argv)
 	{
 		boost::filesystem::path tokenPath = GetKnownFolderPath(KnownFolderType::LocalAppDataEnclave).append(TOKEN_FILENAME);
 		enclave = std::make_shared<RaSgx::DecentServer>(
-			configMgr->GetSpid(), iasConnector, ENCLAVE_FILENAME, tokenPath);
+			serverConfig->GetSgxServiceProviderConfig().GetSpid(), iasConnector, ENCLAVE_FILENAME, tokenPath);
 	}
 	catch (const std::exception& e)
 	{
