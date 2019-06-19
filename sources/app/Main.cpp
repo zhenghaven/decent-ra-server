@@ -42,7 +42,7 @@ using namespace Decent::Threading;
 int main(int argc, char ** argv)
 {
 	//------- Construct main thread worker at very first:
-	MainThreadAsynWorker mainThreadWorker;
+	std::shared_ptr<MainThreadAsynWorker> mainThreadWorker = std::make_shared<MainThreadAsynWorker>();
 
 	std::cout << "================ Decent Server ================" << std::endl;
 
@@ -148,11 +148,11 @@ int main(int argc, char ** argv)
 	}
 
 	//------- Add servers to smart server.
-	smartServer.AddServer(tcpServer, enclave, nullptr, 1);
-	smartServer.AddServer(localServer, enclave, nullptr, 1);
+	smartServer.AddServer(tcpServer, enclave, nullptr, 1, 0);
+	smartServer.AddServer(localServer, enclave, nullptr, 1, 0);
 
 	//------- keep running until an interrupt signal (Ctrl + C) is received.
-	mainThreadWorker.UpdateUntilInterrupt();
+	mainThreadWorker->UpdateUntilInterrupt();
 
 	//------- Exit...
 	enclave.reset();
