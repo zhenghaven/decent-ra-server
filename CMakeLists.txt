@@ -199,6 +199,8 @@ file(GLOB_RECURSE SOURCES_App ${SOURCEDIR_App}/*.[ch]*)
 file(GLOB_RECURSE SOURCES_Enclave ${SOURCEDIR_Enclave}/*.[ch]*)
 file(GLOB_RECURSE SOURCES_EDL ${SOURCEDIR_Enclave}/*.edl)
 
+set(SOURCEDIR_SGX_Enabler ${CMAKE_CURRENT_LIST_DIR}/sources/SGX_Enabler)
+file(GLOB_RECURSE SOURCES_SGX_Enabler ${SOURCEDIR_SGX_Enabler}/*.[ch]*)
 
 #==========================================================
 #   Setup filters
@@ -341,3 +343,23 @@ target_link_libraries(${Proj_Name}_App
 
 add_dependencies(${Proj_Name}_App ${Proj_Name}_Enclave)
 
+###########################################################
+### SGX_Enabler
+###########################################################
+
+add_executable(SGX_Enabler ${SOURCES_SGX_Enabler})
+#includes:
+target_include_directories(SGX_Enabler PRIVATE ${TCLAP_INCLUDE_DIR})
+#defines:
+target_compile_definitions(SGX_Enabler PRIVATE ${COMMON_APP_DEFINES})
+#linker flags:
+set_target_properties(SGX_Enabler PROPERTIES LINK_FLAGS_DEBUG "${APP_DEBUG_LINKER_OPTIONS}")
+set_target_properties(SGX_Enabler PROPERTIES LINK_FLAGS_DEBUGSIMULATION "${APP_DEBUG_LINKER_OPTIONS}")
+set_target_properties(SGX_Enabler PROPERTIES LINK_FLAGS_RELEASE "${APP_RELEASE_LINKER_OPTIONS}")
+set_target_properties(SGX_Enabler PROPERTIES FOLDER "Enabler")
+
+target_link_libraries(SGX_Enabler
+	${COMMON_STANDARD_LIBRARIES}
+	IntelSGX::Untrusted::capable
+	${Additional_Sys_Lib}
+)
