@@ -202,6 +202,9 @@ file(GLOB_RECURSE SOURCES_EDL ${SOURCEDIR_Enclave}/*.edl)
 set(SOURCEDIR_SGX_Enabler ${CMAKE_CURRENT_LIST_DIR}/sources/SGX_Enabler)
 file(GLOB_RECURSE SOURCES_SGX_Enabler ${SOURCEDIR_SGX_Enabler}/*.[ch]*)
 
+set(SOURCEDIR_IasSim ${CMAKE_CURRENT_LIST_DIR}/sources/IasSim)
+file(GLOB_RECURSE SOURCES_IasSim ${SOURCEDIR_IasSim}/*.[ch]*)
+
 #==========================================================
 #   Setup filters
 #==========================================================
@@ -361,5 +364,26 @@ set_target_properties(SGX_Enabler PROPERTIES FOLDER "Enabler")
 target_link_libraries(SGX_Enabler
 	${COMMON_STANDARD_LIBRARIES}
 	IntelSGX::Untrusted::capable
+	${Additional_Sys_Lib}
+)
+
+###########################################################
+### IAS Simulator
+###########################################################
+
+add_executable(IasSimulator ${SOURCES_IasSim})
+#includes:
+target_include_directories(IasSimulator PRIVATE ${TCLAP_INCLUDE_DIR})
+#defines:
+target_compile_definitions(IasSimulator PRIVATE ${COMMON_APP_DEFINES})
+#linker flags:
+set_target_properties(IasSimulator PROPERTIES LINK_FLAGS_DEBUG "${APP_DEBUG_LINKER_OPTIONS}")
+set_target_properties(IasSimulator PROPERTIES LINK_FLAGS_DEBUGSIMULATION "${APP_DEBUG_LINKER_OPTIONS}")
+set_target_properties(IasSimulator PROPERTIES LINK_FLAGS_RELEASE "${APP_RELEASE_LINKER_OPTIONS}")
+set_target_properties(IasSimulator PROPERTIES FOLDER "IasSimulator")
+
+target_link_libraries(IasSimulator
+	${COMMON_STANDARD_LIBRARIES}
+	DecentRa_Server_App
 	${Additional_Sys_Lib}
 )
