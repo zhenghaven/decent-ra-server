@@ -1,5 +1,8 @@
 #include "IasSimApp.h"
 
+#include <chrono>
+#include <thread>
+
 #include <DecentApi/Common/Net/ConnectionBase.h>
 
 #include "IasRespSamples.h"
@@ -7,6 +10,49 @@
 using namespace Decent;
 using namespace Decent::Net;
 using namespace Decent::IasSim;
+
+namespace
+{
+	static std::chrono::duration<double, std::milli> GetSigRlDelay()
+	{
+		using namespace std::chrono_literals;
+		return 30ms;
+	}
+
+	static std::chrono::duration<double, std::milli> GetReportDelay()
+	{
+		using namespace std::chrono_literals;
+		return 227ms;
+	}
+
+	static std::chrono::duration<double, std::milli> GetSigRlDelayNeeded()
+	{
+		using namespace std::chrono_literals;
+
+		auto start = std::chrono::high_resolution_clock::now();
+		auto sampleDelay = GetSigRlDelay();
+		auto end = std::chrono::high_resolution_clock::now();
+
+		std::chrono::duration<double, std::milli> elapsed = end - start;
+
+		auto needed = sampleDelay - elapsed;
+		return needed > 0ms ? needed : 0ms;
+	}
+
+	static std::chrono::duration<double, std::milli> GetReportDelayNeeded()
+	{
+		using namespace std::chrono_literals;
+
+		auto start = std::chrono::high_resolution_clock::now();
+		auto sampleDelay = GetReportDelay();
+		auto end = std::chrono::high_resolution_clock::now();
+
+		std::chrono::duration<double, std::milli> elapsed = end - start;
+
+		auto needed = sampleDelay - elapsed;
+		return needed > 0ms ? needed : 0ms;
+	}
+}
 
 IasSimApp::IasSimApp() :
 	m_sigRlRpc(RpcWriter::CalcSizeStr(sizeof(gsk_sigRl) - 1), 1),
@@ -40,6 +86,8 @@ bool IasSimApp::ProcessSmartMessage(const std::string & category, Net::Connectio
 		
 		const auto& data = m_sigRlRpc.GetBinaryArray();
 
+		std::this_thread::sleep_for(GetSigRlDelayNeeded());
+
 		if (m_sigRlRpc.HasSizeAtFront())
 		{
 			connection.SendRaw(data.data(), data.size());
@@ -55,6 +103,8 @@ bool IasSimApp::ProcessSmartMessage(const std::string & category, Net::Connectio
 		connection.ReceivePack(reqStr);
 
 		const auto& data = m_reportRpc.GetBinaryArray();
+
+		std::this_thread::sleep_for(GetReportDelayNeeded());
 
 		if (m_reportRpc.HasSizeAtFront())
 		{
