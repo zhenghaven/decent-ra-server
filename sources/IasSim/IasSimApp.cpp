@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <thread>
+#include <random>
 
 #include <DecentApi/Common/Net/ConnectionBase.h>
 
@@ -11,18 +12,92 @@ using namespace Decent;
 using namespace Decent::Net;
 using namespace Decent::IasSim;
 
+//#define TURN_OFF_DELAY_SIMULATION
+
 namespace
 {
+	static constexpr double CalcSquare(double x)
+	{
+		return x * x;
+	}
+
+	/**
+	 * \brief	Calculates the alpha for gamma distribution. Based on
+	 * 			https://stats.stackexchange.com/questions/107679/how-to-get-only-positive-values-when-imputing-data
+	 *
+	 * \param	avg   	The average.
+	 * \param	stdDev	The standard deviation.
+	 *
+	 * \return	The calculated alpha.
+	 */
+	static constexpr double CalcAlpha(double avg, double stdDev)
+	{
+		return CalcSquare(avg / stdDev);
+	}
+
+	/**
+	 * \brief	Calculates the beta for gamma distribution. Based on
+	 * 			https://stats.stackexchange.com/questions/107679/how-to-get-only-positive-values-when-imputing-data
+	 *
+	 * \param	avg   	The average.
+	 * \param	stdDev	The standard deviation.
+	 *
+	 * \return	The calculated beta.
+	 */
+	static constexpr double CalcBeta(double avg, double stdDev)
+	{
+		return CalcSquare(stdDev) / avg;
+	}
+
 	static std::chrono::duration<double, std::milli> GetSigRlDelay()
 	{
+#ifndef TURN_OFF_DELAY_SIMULATION
+		//Average value calculated based on the data collected from the IAS web portal
+		static constexpr auto avg = 39.00; // ms;
+
+		//Standard deviation calculated based on the data collected from the IAS web portal
+		static constexpr auto stdDev = 23.79;
+
+		static constexpr auto alpha = CalcAlpha(avg, stdDev);
+		static constexpr auto beta = CalcBeta(avg, stdDev);
+
+		static thread_local std::random_device rd;
+		static thread_local std::mt19937 generator(rd());
+		static thread_local std::gamma_distribution<double> dist(alpha, beta);
+
+		double result = dist(generator);
+
+		return std::chrono::duration<double, std::milli>(result);
+#else
 		using namespace std::chrono_literals;
-		return 30ms;
+		return 0ms;
+#endif // !TURN_OFF_DELAY_SIMULATION
+
 	}
 
 	static std::chrono::duration<double, std::milli> GetReportDelay()
 	{
+#ifndef TURN_OFF_DELAY_SIMULATION
+		//Average value calculated based on the data collected from the IAS web portal
+		constexpr auto avg = 255.43; // ms;
+
+		//Standard deviation calculated based on the data collected from the IAS web portal
+		constexpr auto stdDev = 70.00;
+
+		static constexpr auto alpha = CalcAlpha(avg, stdDev);
+		static constexpr auto beta = CalcBeta(avg, stdDev);
+
+		static thread_local std::random_device rd;
+		static thread_local std::mt19937 generator(rd());
+		static thread_local std::gamma_distribution<double> dist(alpha, beta);
+
+		double result = dist(generator);
+
+		return std::chrono::duration<double, std::milli>(result);
+#else
 		using namespace std::chrono_literals;
-		return 227ms;
+		return 0ms;
+#endif // !TURN_OFF_DELAY_SIMULATION
 	}
 
 	static std::chrono::duration<double, std::milli> GetSigRlDelayNeeded()

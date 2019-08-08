@@ -12,6 +12,14 @@
 
 #include "IasSimApp.h"
 
+#define DECENT_IAS_SIM_VERSION_MAIN 0
+#define DECENT_IAS_SIM_VERSION_SUB  2
+
+#define QUOTE(str) #str
+#define EXPAND_AND_QUOTE(str) QUOTE(str)
+#define DECENT_IAS_SIM_VERSION_STR EXPAND_AND_QUOTE(DECENT_IAS_SIM_VERSION_MAIN) "." EXPAND_AND_QUOTE(DECENT_IAS_SIM_VERSION_SUB)
+#define DECENT_IAS_SIM_VERSION_STR_W_PREFIX "Ver" DECENT_IAS_SIM_VERSION_STR
+
 using namespace Decent;
 using namespace Decent::IasSim;
 using namespace Decent::Net;
@@ -37,7 +45,7 @@ int main(int argc, char ** argv)
 	//------- Construct main thread worker at very first:
 	std::shared_ptr<MainThreadAsynWorker> mainThreadWorker = std::make_shared<MainThreadAsynWorker>();
 
-	std::cout << "================ IAS Simulator ================" << std::endl;
+	std::cout << "================ IAS Simulator " DECENT_IAS_SIM_VERSION_STR_W_PREFIX " ================" << std::endl;
 
 	//------- Setup Smart Server:
 	Net::SmartServer smartServer(mainThreadWorker);

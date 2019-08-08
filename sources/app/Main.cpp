@@ -27,6 +27,14 @@
 #include <DecentApi/DecentServerApp/SGX/DecentServerConfig.h>
 #include <DecentApi/DecentServerApp/DecentServer.h>
 
+#define DECENT_SERVER_VERSION_MAIN 0
+#define DECENT_SERVER_VERSION_SUB  10
+
+#define QUOTE(str) #str
+#define EXPAND_AND_QUOTE(str) QUOTE(str)
+#define DECENT_SERVER_VERSION_STR EXPAND_AND_QUOTE(DECENT_SERVER_VERSION_MAIN) "." EXPAND_AND_QUOTE(DECENT_SERVER_VERSION_SUB)
+#define DECENT_SERVER_VERSION_STR_W_PREFIX "Ver" DECENT_SERVER_VERSION_STR
+
 using namespace Decent;
 using namespace Decent::Tools;
 using namespace Decent::Threading;
@@ -44,14 +52,14 @@ int main(int argc, char ** argv)
 	//------- Construct main thread worker at very first:
 	std::shared_ptr<MainThreadAsynWorker> mainThreadWorker = std::make_shared<MainThreadAsynWorker>();
 
-	std::cout << "================ Decent Server ================" << std::endl;
+	std::cout << "================ Decent Server " DECENT_SERVER_VERSION_STR_W_PREFIX " ================" << std::endl;
 
 	//------- Setup Smart Server:
 	Net::SmartServer smartServer(mainThreadWorker);
 
 	/*TODO: Add SGX capability test.*/
 
-	TCLAP::CmdLine cmd("Decent Server", ' ', "ver", true);
+	TCLAP::CmdLine cmd("Decent Server", ' ', DECENT_SERVER_VERSION_STR_W_PREFIX, true);
 
 	TCLAP::ValueArg<std::string> configPathArg("c", "config", "Path to the configuration file.", false, "Config.json", "String");
 	cmd.add(configPathArg);
