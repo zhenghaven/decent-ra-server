@@ -13,7 +13,7 @@
 #include "IasSimApp.h"
 
 #define DECENT_IAS_SIM_VERSION_MAIN 0
-#define DECENT_IAS_SIM_VERSION_SUB  2
+#define DECENT_IAS_SIM_VERSION_SUB  3
 
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
