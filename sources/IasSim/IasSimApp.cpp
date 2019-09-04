@@ -156,8 +156,7 @@ bool IasSimApp::ProcessSmartMessage(const std::string & category, Net::Connectio
 {
 	if (category == "SigRl")
 	{
-		std::string gidStr;
-		connection.ReceivePack(gidStr);
+		std::string gidStr = connection.RecvContainer<std::string>();
 		
 		const auto& data = m_sigRlRpc.GetBinaryArray();
 
@@ -165,17 +164,16 @@ bool IasSimApp::ProcessSmartMessage(const std::string & category, Net::Connectio
 
 		if (m_sigRlRpc.HasSizeAtFront())
 		{
-			connection.SendRaw(data.data(), data.size());
+			connection.SendRawAll(data.data(), data.size());
 		}
 		else
 		{
-			connection.SendPack(data);
+			connection.SendContainer(data);
 		}
 	}
 	else if (category == "Report")
 	{
-		std::string reqStr;
-		connection.ReceivePack(reqStr);
+		std::string reqStr = connection.RecvContainer<std::string>();
 
 		const auto& data = m_reportRpc.GetBinaryArray();
 
@@ -183,11 +181,11 @@ bool IasSimApp::ProcessSmartMessage(const std::string & category, Net::Connectio
 
 		if (m_reportRpc.HasSizeAtFront())
 		{
-			connection.SendRaw(data.data(), data.size());
+			connection.SendRawAll(data.data(), data.size());
 		}
 		else
 		{
-			connection.SendPack(data);
+			connection.SendContainer(data);
 		}
 	}
 	return false;
