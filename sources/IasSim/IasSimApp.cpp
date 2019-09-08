@@ -157,36 +157,18 @@ bool IasSimApp::ProcessSmartMessage(const std::string & category, Net::Connectio
 	if (category == "SigRl")
 	{
 		std::string gidStr = connection.RecvContainer<std::string>();
-		
-		const auto& data = m_sigRlRpc.GetBinaryArray();
 
 		std::this_thread::sleep_for(GetSigRlDelayNeeded());
 
-		if (m_sigRlRpc.HasSizeAtFront())
-		{
-			connection.SendRawAll(data.data(), data.size());
-		}
-		else
-		{
-			connection.SendContainer(data);
-		}
+		connection.SendRpc(m_sigRlRpc);
 	}
 	else if (category == "Report")
 	{
 		std::string reqStr = connection.RecvContainer<std::string>();
 
-		const auto& data = m_reportRpc.GetBinaryArray();
-
 		std::this_thread::sleep_for(GetReportDelayNeeded());
 
-		if (m_reportRpc.HasSizeAtFront())
-		{
-			connection.SendRawAll(data.data(), data.size());
-		}
-		else
-		{
-			connection.SendContainer(data);
-		}
+		connection.SendRpc(m_reportRpc);
 	}
 	return false;
 }
