@@ -28,7 +28,7 @@
 #include <DecentApi/DecentServerApp/DecentServer.h>
 
 #define DECENT_SERVER_VERSION_MAIN 0
-#define DECENT_SERVER_VERSION_SUB  11
+#define DECENT_SERVER_VERSION_SUB  12
 
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
