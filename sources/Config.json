@@ -10,10 +10,8 @@
 
 	"SgxServiceProvider" :
 	{
-		"_comment" : "IAS SPID field (i.e. IasSpid) is ignored in simulation mode.",
-
-		"IasSpid" : null,
-		"SubscriptionKey" : null
+		"IasSpid" : "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+		"SubscriptionKey" : "00000000000000000000000000000000"
 	}
 
 }

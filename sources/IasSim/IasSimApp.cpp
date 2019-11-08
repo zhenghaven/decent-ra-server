@@ -4,6 +4,7 @@
 #include <thread>
 #include <random>
 
+#include <DecentApi/Common/Common.h>
 #include <DecentApi/Common/Net/ConnectionBase.h>
 
 #include "IasRespSamples.h"
@@ -66,6 +67,11 @@ namespace
 		static thread_local std::gamma_distribution<double> dist(alpha, beta);
 
 		double result = dist(generator);
+		while (result > 10000.00)
+		{
+			PRINT_I("Discarded a too large sample - %f", result);
+			result = dist(generator);
+		}
 
 		return std::chrono::duration<double, std::milli>(result);
 #else
@@ -92,6 +98,11 @@ namespace
 		static thread_local std::gamma_distribution<double> dist(alpha, beta);
 
 		double result = dist(generator);
+		while (result > 10000.00)
+		{
+			PRINT_I("Discarded a too large sample - %f", result);
+			result = dist(generator);
+		}
 
 		return std::chrono::duration<double, std::milli>(result);
 #else
