@@ -3,31 +3,11 @@ cmake_minimum_required(VERSION 3.11)
 #==========================================================
 #   Options for Decent Server Project
 #==========================================================
-set(HUNTER_BOOST_RUNTIME_STATIC ON CACHE BOOL "Switch for using boost runtime static linking." FORCE)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if(APPLE)
 	message(FATAL_ERROR "Mac OS is not supported for now.")
 endif()
-#==========================================================
-#   Setup Hunter
-#==========================================================
-
-set(gate_dir "${CMAKE_CURRENT_LIST_DIR}/hunter/gate")
-set(gate_module "${gate_dir}/cmake/HunterGate.cmake")
-set(HUNTER_KEEP_PACKAGE_SOURCES ON)
-
-get_filename_component(gate_module "${gate_module}" ABSOLUTE)
-
-if(NOT EXISTS "${gate_module}")
-	message(FATAL_ERROR "${gate_module} module not found!")
-endif()
-
-message("Including HunterGate: ${gate_module}")
-include("${gate_module}")
-
-get_filename_component(HUNTER_ROOT "${CMAKE_CURRENT_LIST_DIR}/hunter" ABSOLUTE)
-HunterGate(URL "x" SHA1 "xxxxxxxx" FILEPATH ${CMAKE_CURRENT_LIST_DIR}/HunterConfig.cmake)
 
 #==========================================================
 #   Start Decent Server Project
@@ -35,23 +15,16 @@ HunterGate(URL "x" SHA1 "xxxxxxxx" FILEPATH ${CMAKE_CURRENT_LIST_DIR}/HunterConf
 project(DecentServer)
 
 #==========================================================
-#   Add Hunter Libraries
+#   Setup options
 #==========================================================
+
 set(BUILD_SHARED_LIBS OFF)
 set(BUILD_STATIC_LIBS ON)
 set(USE_MSVC_RUNTIME_LIBRARY_DLL OFF)
 
-hunter_add_package(Boost COMPONENTS filesystem)
-hunter_add_package(OpenSSL)
-
 set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ${HUNTER_BOOST_RUNTIME_STATIC})
+set(Boost_USE_STATIC_RUNTIME ON)
 set(Boost_NO_SYSTEM_PATHS ON)
-find_package(Boost CONFIG REQUIRED system filesystem)
-
-#==========================================================
-#   Setup options
-#==========================================================
 
 if (WIN32)
 	macro(get_WIN32_WINNT version)
@@ -79,7 +52,7 @@ if (WIN32)
 endif(WIN32)
 
 if(MSVC)
-	set(COMMON_OPTIONS /W3 /wd4996 /we4239 /we4002 /we4700 /we4305 /EHsc /MP)
+	set(COMMON_OPTIONS /W3 /wd4996 /we4239 /we4002 /we4700 /we4305 /EHsc /MP /d2FH4-)
 	set(DEBUG_OPTIONS /MTd /Od /Zi /DDEBUG)
 	set(SIMULATE_OPTIONS /DSIMULATING_ENCLAVE)
 	set(RELEASE_OPTIONS /MT /Ox /Oi /Ob2 /fp:fast /GR- /DEDEBUG)# /DNDEBUG

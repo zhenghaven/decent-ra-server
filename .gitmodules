@@ -1,6 +1,3 @@
-[submodule "hunter"]
-	path = hunter
-	url = https://github.com/zhenghaven/hunter.git
 [submodule "libs/decent-ra-api"]
 	path = libs/decent-ra-api
 	url = git@github.com:zhenghaven/decent-ra-api.git

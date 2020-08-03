@@ -23,6 +23,7 @@
 
 #include <DecentApi/Common/Common.h>
 #include <DecentApi/Common/Ra/WhiteList/WhiteList.h>
+#include <DecentApi/Common/MbedTls/Initializer.h>
 
 #include <DecentApi/DecentServerApp/SGX/DecentServerConfig.h>
 #include <DecentApi/DecentServerApp/DecentServer.h>
@@ -49,6 +50,8 @@ using namespace Decent::Threading;
  */
 int main(int argc, char ** argv)
 {
+	auto mbedInit = Decent::MbedTlsObj::Initializer::Init();
+
 	//------- Construct main thread worker at very first:
 	std::shared_ptr<MainThreadAsynWorker> mainThreadWorker = std::make_shared<MainThreadAsynWorker>();
 
